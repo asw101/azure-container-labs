@@ -13,7 +13,7 @@ LOCATION='eastus'
 if [ -z "$RANDOM_STR" ]; then RANDOM_STR=$(openssl rand -hex 3); else echo $RANDOM_STR; fi
 # RANDOM_STR='9f889c'
 CONTAINER_REGISTRY=acr${RANDOM_STR}
-CONTAINER_IMAGE='spring-music:v1'
+CONTAINER_IMAGE='hello-echo:latest'
 KUBERNETES_SERVICE=aks${RANDOM_STR}
 
 # If we're not yet logged in:
