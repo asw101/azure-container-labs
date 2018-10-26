@@ -1,4 +1,4 @@
-# Deploy to Azure Kubernetes Service (AKS)
+# Deploy to Azure Container Instance (ACI) and Azure Kubernetes Service (AKS)
 
 The Azure Kubernetes Service (AKS) allows for spinning up a Kubernetes instance to deploy your application infrastructure to. Once this instance is available, you can deploy your application to Kubernetes using the `kubectl` command-line tool as you would with any other Kubernetes instance.
 
@@ -53,7 +53,7 @@ See: [Azure Container Registry Tutorial](https://docs.microsoft.com/en-us/azure/
 az acr build --registry $CONTAINER_REGISTRY --image $CONTAINER_IMAGE .
 ```
 
-## Deploy application to Azure Container Instances
+## Deploy application to Azure Container Instances (ACI)
 
 See: [Azure Container Instances Quickstart](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-quickstart#create-a-container)
 
