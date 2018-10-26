@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-echo
+spec:
+  selector:
+    matchLabels:
+      app: hello-echo
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: hello-echo
+    spec:
+      containers:
+      - name: hello-echo
+        image: aaronmsft/hello-echo:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: TEST
+          value: value
+        resources:
+          limits:
+            memory: 256Mi
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 5
+          timeoutSeconds: 10
