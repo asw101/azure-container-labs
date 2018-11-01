@@ -12,6 +12,8 @@ spec:
       labels:
         app: hello-echo
     spec:
+      imagePullSecrets:
+        - name: regcred
       containers:
       - name: hello-echo
         image: aaronmsft/hello-echo:latest
