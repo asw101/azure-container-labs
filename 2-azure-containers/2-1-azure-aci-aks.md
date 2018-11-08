@@ -1,21 +1,22 @@
 # Deploy to Azure Container Instance (ACI) and Azure Kubernetes Service (AKS)
 
-The Azure Kubernetes Service (AKS) allows for spinning up a Kubernetes instance to deploy your application infrastructure to. Once this instance is available, you can deploy your application to Kubernetes using the `kubectl` command-line tool as you would with any other Kubernetes instance.
+Azure Kubernetes Service (AKS) is Azure's fully managed Kubernetes service. Once we have deployed our instance, and an Azure Container Registry (ACR) for our Docker image, we can deploy our application to Kubernetes using its `kubectl` command-line tool.
 
-# Login to Azure Portal and Configure Cloud Shell
-Log into the Azure Portal to access the Subscription. Once you are logged in you will access and setup Cloud Shell to get a Bash environment to run the commands.
-> In this session you can use [Cloud Shell](https://docs.microsoft.com/en-ca/azure/cloud-shell/quickstart) ...
+## Login to Azure Portal and open Cloud Shell
+Log into the Azure Portal to access the Subscription. Once you are logged, open [Cloud Shell](https://docs.microsoft.com/en-ca/azure/cloud-shell/quickstart) which provides a full bash environment to run the commands below.
 
-# Clone the Azure Container Labs repo from GitHub:
-> Azure-Samples/azure-container-labs or similar
+## Clone the Azure Container Labs repo from GitHub
 
+Once inside cloud shell, clone this repository using the below command and change to the azure-container-labs directory:
+
+```bash
 git clone https://github.com/asw101/azure-container-labs.git
-
 cd azure-container-labs/
+```
 
-# Configure environment variables
+## Configure environment variables
 
-Configure our environment variables and login to Azure CLI (if neccessary):
+Below we will set some environment variables which will be across the commands we run:
 
 ```bash
 # RESOURCE_GROUP='Group-...'
@@ -30,28 +31,38 @@ CONTAINER_IMAGE='hello-echo:latest'
 KUBERNETES_SERVICE=aks${RANDOM_STR}
 ```
 
-# Setup (optional)
-> If you are working in a "workshop" environment, you won't need to do this.
+## Optional setup
 
-# If we're not yet logged in:
+If you are running this lab *in your own subscription* and not in a workshop environment, you will need to run the following commands. Otherwise, continue to [Docker multi-stage build using Azure Container Registry (ACR) Build]().
+
+If you choose to run the Azure CLI locally, rather than in Cloud Shell, you will need to run the `az login` command.
+
+```bash
 az login
+```
 
-# Create the resource group, if required:
+Create a Resource Group
+
+```bash
 az group create --name $RESOURCE_GROUP --location $LOCATION
+```
 
-2. Create [Azure Container Registry](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-get-started-azure-cli#create-a-container-registry) and [Azure Kubernetes Service](https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough#create-aks-cluster)
+Create [Azure Container Registry](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-get-started-azure-cli#create-a-container-registry) and [Azure Kubernetes Service](https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough#create-aks-cluster)
 
 ```bash
 az acr create -g $RESOURCE_GROUP -n $CONTAINER_REGISTRY --sku Basic
 
 az aks create -g $RESOURCE_GROUP -n $KUBERNETES_SERVICE --node-count 3 --generate-ssh-keys
+```
 
-# install cli and connect to aks cluster
+Install the kubectl CLI tool and connect to your cluster
+
+```bash
 az aks install-cli
 az aks get-credentials -g $RESOURCE_GROUP -n $KUBERNETES_SERVICE
 ```
 
-3. [Grant Azure Kubernetes Service access to Azure Container Registry](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-auth-aks#grant-aks-access-to-acr)
+[Grant Azure Kubernetes Service access to Azure Container Registry](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-auth-aks#grant-aks-access-to-acr)
 
 ```bash
 # get the id of the service principal configured for AKS, get the ACR registry resource id, and create role assignment
@@ -60,16 +71,15 @@ CONTAINER_REGISTRY_ID=$(az acr show -g $RESOURCE_GROUP -n $CONTAINER_REGISTRY --
 az role assignment create --assignee $CLIENT_ID --scope $CONTAINER_REGISTRY_ID --role Reader
 ```
 
+## Docker multi-stage build using Azure Container Registry (ACR) Build
 
-# Docker multi-stage build using Azure Container Registry (ACR) Build
-
-In our [Dockerfile](Dockerfile) we are building our application in the `FROM golang:rc-alpine as builder` stage, and copying the `hello-echo` binary to a `FROM scratch` image in the second stage (note that we also build with `CGO_ENABLED=0` when using a `scratch` image).
-
-> **Note: Our Azure Container Registry's name must also be globally unique, so we are also setting CONTAINER_REGISTRY to 'acr2018' with 5 character random suffix.**
+In our [Dockerfile](Dockerfile) we build our application in the `FROM golang:rc-alpine as builder` stage, and copy the `hello-echo` binary to a `FROM scratch` image in the second stage (note that we also build with `CGO_ENABLED=0` when using a `scratch` image).
 
 ## Create an Azure Container Registry
 
 Now let's use the Azure CLI (az) to [create an Azure Container Registry]((https://docs.microsoft.com/en-us/azure/container-registry/container-registry-get-started-azure-cli#create-a-container-registry)) and build an image in the cloud.
+
+Note: Our Azure Container Registry's name must also be globally unique, so we have set `CONTAINER_REGISTRY` to 'acr' with a random alphanumeric suffix.
 
 ```bash
 az acr create -g $RESOURCE_GROUP -n $CONTAINER_REGISTRY --sku Basic --enable-admin
@@ -87,50 +97,58 @@ The fully-qualified name of the image in our Container Registry will then be `$C
 
     echo "${CONTAINER_REGISTRY}.azurecr.io/${CONTAINER_IMAGE}"
 
-Congratulations, you have compiled your Go application and built your first image inside Azure Container Registry, using ACR Build and Docker multi-stage builds. This can be used on local and remote machines via `az acr login -n $REGISTRY_NAME` and `docker run -it $REGISTRY_NAME'.azurecr.io/hello-echo:latest'`.
+Congratulations, you have compiled your Go application and built your first image inside Azure Container Registry, using ACR Build and Docker multi-stage builds. This can be used used on any machine running Doocker, locally, or in the cloud, via `az acr login -n $REGISTRY_NAME` followed by `docker run -it $REGISTRY_NAME'.azurecr.io/hello-echo:latest'`.
 
 
 ## Deploy application to Azure Kubernetes Service
 
-1. Set `image: ...` in [kubernetes-deploy.yaml](kubernetes-deployment.yaml) to the fully qualified image name which can be found via:
+Open [kubernetes-deploy.yaml](kubernetes-deployment.yaml) in a text editor and set `image: ...` to the fully qualified image name which can be found via:
 
 ```bash
 echo "${CONTAINER_REGISTRY}.azurecr.io/${CONTAINER_IMAGE}"
 ```
 
-> If you are running in Azure Cloud Shell you can open it with our integrated 'code' editor via: ```code kubernetes-deployment.yaml```
+Note: If you are running in Azure Cloud Shell you can edit `kubernetes-deploymentt.yaml` right in your browser with our integrated 'code' editor via: `code kubernetes-deployment.yaml`.
 
-> 1. Create a imagePullSecret that will allow AKS to pull from ACR
-> Note: this is not required if you are using your own cluster with the xxx above.
+Create a Kubernetes Secret with the credentials neccessary to [pull an image from a private registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/). 
+
+Note: this is *not* required if you have setup your own cluster under [Optional setup]() above.
 
 ```bash
 CONTAINER_REGISTRY_PASSWORD=$(az acr credential show --name $CONTAINER_REGISTRY | jq -r .passwords[0].value)
 
-kubectl create secret docker-registry regcred --docker-server=$CONTAINER_REGISTRY'.azurecr.io' \
+kubectl create secret docker-registry regcred --docker-server="${CONTAINER_REGISTRY}.azurecr.io" \
     --docker-username=$CONTAINER_REGISTRY \
     --docker-password=$CONTAINER_REGISTRY_PASSWORD \
     --docker-email=user@example.org
 ```
 
-2. Deploy the application to Azure Kuberentes Service:
+Deploy the application to Azure Kubernetes Service:
+
+Below we will run a series of `kubectl` commands to deploy our application, interact with our deployment and expose it on the public internet.
 
 ```bash
-# create deployment
+# create deployment with kubectl apply
 kubectl apply -f kubernetes-deployment.yaml
 
+# we use kubectl get deploy to check the status of the deployment
 kubectl get deploy --watch
 # note: ctrl + c to stop watch
 
-# > note: works locally
+# if we are running the kubectl on our local machine (not inside cloudshell) we can forward port 9090 on our local machine to 8080 so that we can interact with our application before we expose it to the world.
 # kubectl port-forward deploy/hello-echo 9090:8080
+# open http://localhost:9090
+# ctrl + c to exit port-forward
 
+# describe provides more details of our deployment
 kubectl describe deploy hello-echo
 
+# get pods will get all the running pods, including those in our deployment
 kubectl get pods
 
-# get the first pod within our deployment and show the logs
 > tweak sample to get the pod from the label name
-export POD=$(kubectl get pods -l app.kubernetes.io/name=jaeger-operator --output name)
+# get the name of a specific pod by its label, and view its logs
+POD=$(kubectl get pods -l app.kubernetes.io/name=jaeger-operator --output name)
 kubectl logs $POD
 
 # scale our deployment from one instance to two
@@ -156,12 +174,15 @@ curl $IP_ADDRESS
 
 # you may also open the following URL in your web browser
 echo "http://${IP_ADDRESS}"
-
 ```
+
+Congratulations, you have successfully deployed your application to Kubernetes on Azure Kubernetes Service!
 
 ## Deploy application to Azure Container Instances (ACI)
 
-See: [Azure Container Instances Quickstart](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-quickstart#create-a-container)
+We can deploy the same application as a single stand-alone container to Azure Container Instance below. See also: [Azure Container Instances Quickstart](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-quickstart#create-a-container).
+
+Ensure you have run the [Configure environment variables]() section above, as we are re-using these below.
 
 ```bash
 # get our container registry password
@@ -182,6 +203,7 @@ az container create --resource-group $RESOURCE_GROUP --location $LOCATION \
 # show container events
 az container show -g $RESOURCE_GROUP -n aci${RANDOM_STR} | jq .containers[0].instanceView.events[]
 
+# get the fully qualified domain of our container instance, set --dns-name-label above
 CONTAINER_INSTANCE_FQDN=$(az container show -g $RESOURCE_GROUP -n aci${RANDOM_STR} | jq -r .ipAddress.fqdn)
 
 # test the service in the terminal via curl
@@ -190,6 +212,12 @@ curl "${CONTAINER_INSTANCE_FQDN}:8080"
 # you may also open the following URL in your web browser
 echo "http://${CONTAINER_INSTANCE_FQDN}:8080"
 ```
+
+## Additional container labs
+
+1. [Azure Container Instance](2-2-azure-container-instance.md)
+1. [Azure Web App for Containers](2-3-azure-web-app-for-containers.md)
+1. [Azure Web App](2-4-azure-web-app.md)
 
 ## Resources
 
