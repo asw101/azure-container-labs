@@ -22,7 +22,7 @@ metadata:
     kubernetes.io/ingress.class: addon-http-application-routing
 spec:
   rules:
-  - host: hello-echo-9f889c.ce70660102d64c30b7ad.eastus.aksapp.io
+  - host: ...
     http:
       paths:
       - backend:
