@@ -33,7 +33,7 @@ KUBERNETES_SERVICE=aks${RANDOM_STR}
 
 ## Optional setup
 
-If you are running this lab *in your own subscription* and not in a workshop environment, you will need to run the following commands. Otherwise, continue to [Docker multi-stage build using Azure Container Registry (ACR) Build]().
+If you are running this lab *in your own subscription* and not in a workshop environment, you will need to run the following commands. Otherwise, continue to [Docker multi-stage build using Azure Container Registry (ACR) Build](#docker-multi-stage-build-using-azure-container-registry-acr-build).
 
 If you choose to run the Azure CLI locally, rather than in Cloud Shell, you will need to run the `az login` command.
 
@@ -115,7 +115,7 @@ Note: If you are running in Azure Cloud Shell you can edit `kubernetes-deploymen
 
 Create a Kubernetes Secret with the credentials neccessary to [pull an image from a private registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/). 
 
-Note: this is *not* required if you have setup your own cluster under [Optional setup]() above.
+Note: this is *not* required if you have setup your own cluster under [Optional setup](#optional-setup) above.
 
 ```bash
 CONTAINER_REGISTRY_PASSWORD=$(az acr credential show --name $CONTAINER_REGISTRY | jq -r .passwords[0].value)
@@ -228,7 +228,7 @@ Congratulations, you have successfully deployed your application to Kubernetes o
 
 We can deploy the same application as a single stand-alone container to Azure Container Instance below. See also: [Azure Container Instances Quickstart](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-quickstart#create-a-container).
 
-Ensure you have run the [Configure environment variables]() section above, as we are re-using these below.
+Ensure you have run the [Configure environment variables](#configure-environment-variables) section above, as we are re-using these below.
 
 ```bash
 # get our container registry password
