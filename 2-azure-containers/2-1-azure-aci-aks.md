@@ -1,4 +1,4 @@
-# Deploy to Azure Container Instance (ACI) and Azure Kubernetes Service (AKS)
+# Deploy Azure Kubernetes Service (AKS) and to Azure Container Instance (ACI)
 
 Azure Kubernetes Service (AKS) is Azure's fully managed Kubernetes service. Once we have deployed our instance, and an Azure Container Registry (ACR) for our Docker image, we can deploy our application to Kubernetes using its `kubectl` command-line tool.
 
@@ -181,7 +181,7 @@ kubectl scale deployment hello-echo --replicas=2
 
 Next we will deploy a `Service` so that your application can be reached from the outside world.
 
-Service + Azure HTTP Application Routing
+**Kubernetes Service + Ingress (Azure HTTP Application Routing)**
 
 ```bash
 # create kubernetes service, and an ingress with the annotation for HTTP Application Routing
@@ -200,10 +200,11 @@ curl $SERVICE_FQDN
 echo $SERVICE_FQDN
 ```
 
-Kubernetes Service
+**Kubernetes Service**
+
+Note: this is an alternative to **Service Service + Ingress (Azure HTTP Application Routing)** above.
 
 ```bash
-> use http routing
 # create service (of type LoadBalancer) that will expose our deployment to the world via an Azure Load Balancer witha  public IP 
 kubectl apply -f kubernetes-service.yaml
 
