@@ -12,7 +12,7 @@ For this lab you will use the ACR created in the last step, or if you did the pr
 1. Create the container instance and deploy. Unlike application names, ACI names only need to be unique within their resource group.
 
     ```bash
-     az container create -g $RESOURCE_GROUP --name aci-deploy --image $REGISTRY_NAME.azurecr.io/hello-echo --registry-password $ACR_PASS --registry-username $REGISTRY_NAME --ip-address public --ports 8080
+    az container create -g $RESOURCE_GROUP --name aci-deploy --image $REGISTRY_NAME.azurecr.io/hello-echo --registry-password $ACR_PASS --registry-username $REGISTRY_NAME --ip-address public --ports 8080
     ```
 
     Note that even if the container image specifies that certain ports should be exposed, they must additionally be exposed in the ACI creation. Container creation can take a few minutes while the instance spins up and runs the image.
