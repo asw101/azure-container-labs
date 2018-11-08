@@ -23,5 +23,6 @@ you'll be able to skip some steps here.
 ## Deploy to:
 
 1. [Azure Container Instance and Azure Kubernetes Service](2-1-azure-aci-aks.md)
+1. [Azure Container Instance](2-2-azure-container-instance.md)
 1. [Azure Web App for Containers](2-3-azure-web-app-for-containers.md)
 1. [Azure Web App](2-4-azure-web-app.md)
