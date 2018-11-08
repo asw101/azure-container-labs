@@ -23,7 +23,7 @@ Below we will set some environment variables which will be across the commands w
 RESOURCE_GROUP=$(az group list | jq -r '[.[].name|select(. | startswith("Group-"))][0]')
 LOCATION='eastus'
 if [ -z "$RANDOM_STR" ]; then RANDOM_STR=$(openssl rand -hex 3); else echo $RANDOM_STR; fi
-# RANDOM_STR='9f889c'
+# RANDOM_STR='9c445c'
 ## CONTAINER_IMAGE=$(...) # automatic: check existing RG
 CONTAINER_REGISTRY=acr${RANDOM_STR}
 CONTAINER_IMAGE='hello-echo:latest'
@@ -50,7 +50,7 @@ az group create --name $RESOURCE_GROUP --location $LOCATION
 Create [Azure Container Registry](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-get-started-azure-cli#create-a-container-registry) and [Azure Kubernetes Service](https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough#create-aks-cluster)
 
 ```bash
-az acr create -g $RESOURCE_GROUP -n $CONTAINER_REGISTRY --sku Basic
+az acr create -g $RESOURCE_GROUP -n $CONTAINER_REGISTRY --sku Basic --admin-enabled
 
 az aks create -g $RESOURCE_GROUP -n $KUBERNETES_SERVICE --node-count 3 --generate-ssh-keys
 ```
@@ -82,7 +82,7 @@ Now let's use the Azure CLI (az) to [create an Azure Container Registry]((https:
 Note: Our Azure Container Registry's name must also be globally unique, so we have set `CONTAINER_REGISTRY` to 'acr' with a random alphanumeric suffix.
 
 ```bash
-az acr create -g $RESOURCE_GROUP -n $CONTAINER_REGISTRY --sku Basic --enable-admin
+az acr create -g $RESOURCE_GROUP -n $CONTAINER_REGISTRY --sku Basic --admin-enabled
 ```
 
 ## Build application using Azure Container Registry Build
@@ -91,16 +91,19 @@ See: [Azure Container Registry Tutorial](https://docs.microsoft.com/en-us/azure/
 
 To build using ACR Build, which will push our Dockerfile and code to the cloud, build the image, and store it in our Azure Container Registry, we use the [az acr build](https://docs.microsoft.com/en-us/cli/azure/acr?#az-acr-build) command:
 
-    az acr build -r $CONTAINER_REGISTRY -t $CONTAINER_IMAGE --file Dockerfile .
+```bash
+az acr build -r $CONTAINER_REGISTRY -t $CONTAINER_IMAGE --file Dockerfile .
+```
 
 The fully-qualified name of the image in our Container Registry will then be `$CONTAINER_REGISTRY'.azurecr.io/hello-echo:latest'`. Let's output this with:
 
-    echo "${CONTAINER_REGISTRY}.azurecr.io/${CONTAINER_IMAGE}"
+```bash
+echo "${CONTAINER_REGISTRY}.azurecr.io/${CONTAINER_IMAGE}"
+```
 
 Congratulations, you have compiled your Go application and built your first image inside Azure Container Registry, using ACR Build and Docker multi-stage builds. This can be used used on any machine running Doocker, locally, or in the cloud, via `az acr login -n $REGISTRY_NAME` followed by `docker run -it $REGISTRY_NAME'.azurecr.io/hello-echo:latest'`.
 
-
-## Deploy application to Azure Kubernetes Service
+## Prepare application for deployment to Kubernetes
 
 Open [kubernetes-deploy.yaml](kubernetes-deployment.yaml) in a text editor and set `image: ...` to the fully qualified image name which can be found via:
 
@@ -108,7 +111,7 @@ Open [kubernetes-deploy.yaml](kubernetes-deployment.yaml) in a text editor and s
 echo "${CONTAINER_REGISTRY}.azurecr.io/${CONTAINER_IMAGE}"
 ```
 
-Note: If you are running in Azure Cloud Shell you can edit `kubernetes-deploymentt.yaml` right in your browser with our integrated 'code' editor via: `code kubernetes-deployment.yaml`.
+Note: If you are running in Azure Cloud Shell you can edit `kubernetes-deployment.yaml` right in your browser with our integrated 'code' editor via: `code kubernetes-deployment.yaml`.
 
 Create a Kubernetes Secret with the credentials neccessary to [pull an image from a private registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/). 
 
@@ -123,7 +126,28 @@ kubectl create secret docker-registry regcred --docker-server="${CONTAINER_REGIS
     --docker-email=user@example.org
 ```
 
-Deploy the application to Azure Kubernetes Service:
+Enable HTTP Application Routing (see: [Use HTTP Application Routing](https://docs.microsoft.com/en-us/azure/aks/http-application-routing))
+
+```bash
+az aks enable-addons --resource-group $RESOURCE_GROUP --name $KUBERNETES_SERVICE --addons http_application_routing
+
+APPLICATON_ROUTING_ZONE=$(az aks show --resource-group $RESOURCE_GROUP --name $KUBERNETES_SERVICE | jq -r .addonProfiles.httpApplicationRouting.config.HTTPApplicationRoutingZoneName)
+```
+
+Open `kubernetes-service-ingress.yaml` and replace `...` in (`  - host: ...` under the `Ingress` object) with the result of:
+
+```bash
+echo "hello-echo-${RANDOM_STR}.${APPLICATON_ROUTING_ZONE}"
+```
+
+## Deploy application to Azure Kubernetes Service
+
+Install the kubectl CLI tool and connect to your cluster (if required)
+
+```bash
+az aks install-cli
+az aks get-credentials -g $RESOURCE_GROUP -n $KUBERNETES_SERVICE
+```
 
 Below we will run a series of `kubectl` commands to deploy our application, interact with our deployment and expose it on the public internet.
 
@@ -148,19 +172,40 @@ kubectl get pods
 
 > tweak sample to get the pod from the label name
 # get the name of a specific pod by its label, and view its logs
-POD=$(kubectl get pods -l app.kubernetes.io/name=jaeger-operator --output name)
+POD=$(kubectl get pods -l app=hello-echo -o json | jq -r '.items[0].metadata.name')
 kubectl logs $POD
 
 # scale our deployment from one instance to two
 kubectl scale deployment hello-echo --replicas=2
+```
 
+Next we will deploy a `Service` so that your application can be reached from the outside world.
+
+Service + Azure HTTP Application Routing
+
+```bash
+# create kubernetes service, and an ingress with the annotation for HTTP Application Routing
+kubectl apply -f kubernetes-service-ingress.yaml
+
+# wait for our service to become available
+kubectl get service --watch
+
+# the public URL for our service will be 
+SERVICE_FQDN="http://hello-echo-${RANDOM_STR}.${APPLICATON_ROUTING_ZONE}"
+
+# test the service in the terminal via curl
+curl $SERVICE_FQDN
+
+# you may also open the following URL in your web browser
+echo $SERVICE_FQDN
+```
+
+Kubernetes Service
+
+```bash
 > use http routing
 # create service (of type LoadBalancer) that will expose our deployment to the world via an Azure Load Balancer witha  public IP 
 kubectl apply -f kubernetes-service.yaml
-
-> remove (or comment)
-# NO longer needed if we do HTTP APP ROUTING
-#kubectl port-forward service/hello-echo 9090:80
 
 # wait for our service to become available
 kubectl get service --watch
