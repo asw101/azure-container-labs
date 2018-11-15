@@ -10,7 +10,7 @@ In this lab we will build a sample Go web application locally as a binary. We wi
 
 ## 2. Deploy your container to Azure
 
-In this lab we will deploy our Go web application, in a container, to [Azure Container Instance and Azure Kubernetes Service](2-1-azure-aci-aks.md). There is also the option to deploy to Azure Web App for Containers or Azure Web App.
+In this lab we will deploy our Go web application, in a container, to [Azure Container Instance and Azure Kubernetes Service](2-azure-containers/2-1-azure-aci-aks.md). There is also the option to deploy to Azure Web App for Containers or Azure Web App.
 
 [Go to lab](2-azure-containers/2-1-azure-aci-aks.md) | Duration: 10-15 minutes
 
